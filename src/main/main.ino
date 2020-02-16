@@ -38,6 +38,41 @@
 DeviceAddress tempSensor1 = {0x28, 0xAA, 0xB3, 0xB0, 0x16, 0x13, 0x02, 0x83}; // For vifte 1
 DeviceAddress tempSensor2 = {0x28, 0xAA, 0xA5, 0x84, 0x13, 0x13, 0x02, 0x10}; // For vifte 2
 
+
+
+// Classes ||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+class Fan
+{
+  public:
+
+        int switch_pin;
+        int signal_pin;
+        int state;
+        
+        void turnOff();
+
+        void turnOn();
+};
+
+void Fan::turnOff()
+{
+  // Set fan speed to 10% duty cycle. 
+  analogWrite (signal_pin, 25.5);
+  delay (100); // Wait for 100 milliseconds
+  digitalWrite (switch_pin, HIGH);
+}
+
+
+void Fan::turnOn()
+{
+  // Set fan speed to 10% duty cycle.
+  analogWrite (signal_pin, 25.5);
+  delay (100); // Wait for 100 milliseconds
+  digitalWrite (switch_pin, LOW);
+}
+// End of Classes ||||||||||||||||||||||||||||||||||||||
+
 /********************************************************************/
 // Setup a oneWire instance to communicate with any OneWire devices  
 // (not just Maxim/Dallas temperature ICs) 
@@ -46,8 +81,6 @@ OneWire oneWire(TEMPSENSOR_PIN);
 // Pass our oneWire reference to Dallas Temperature. 
 DallasTemperature sensors(&oneWire);
 /********************************************************************/ 
-
-
 
 
 
@@ -62,11 +95,11 @@ void setup(void)
  //DeviceAddress tempSensor2 = {0x28, 0xAA, 0xA5, 0x84, 0x13, 0x13, 0x02, 0x10};
  // -- Define and initialize I/O pins -- 
 
- // Fan 1 relay
+ // Fan 1 relay state
  pinMode(FAN1_SWITCH_PIN, OUTPUT); 
  digitalWrite(FAN1_SWITCH_PIN, HIGH); // Default state
 
- // Fan 2 relay
+ // Fan 2 relay state
  pinMode(FAN2_SWITCH_PIN, OUTPUT); // 
  digitalWrite(FAN2_SWITCH_PIN, HIGH); // Default state
 
@@ -74,42 +107,41 @@ void setup(void)
  // Initialize sensors
  sensors.begin();
 
- // Safety delay
+ // Safety delay after sensors have initialized
  delay(2000);
  
  // Set sensor bit resolution to 12 for all sensors.
  int sensorCount = sensors.getDeviceCount();
  for (int i = 0; i < sensorCount; i++)
  {
-  sensors.setResolution(i,12); 
+  sensors.setResolution(i,12);
  }
- //sensors.setResolution(tempSensor1, 11);
- //sensors.setResolution(tempSensor2, 11);
  
  Serial.print("### Arduino Receiver Cooling and Visualization System (A.R.C.V.S) ###");
  Serial.print("\n");
+
+
+
 } 
 
 
+// END OF SETUP |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
 
+Fan fan1;
 
-void fanControl(int fanSpeed)
+
+void setFanSpeed(float fanSpeed)
 {
-      //analogWrite(PD3, fanSpeed);
       analogWrite(FAN1_CONTROL_PIN, fanSpeed);
-
 }
 
 
 float getTemperature()
 {
   sensors.requestTemperatures();
-  //float temp1 = sensors.getTempCByIndex(tempSensor1);
-  //float temp2 = sensors.getTempCByIndex(tempSensor2);
-  //float temperatures[] = {temp1, temp2};
-  float temperature = 25.1;
-  return temperature;
+  float temp = sensors.getTempCByIndex(0);
+  return temp;
 }
 
 
@@ -119,22 +151,14 @@ float calculateDutyCycle(float temp)
   return 0.625 * pow (temp, 2) + 0 + 30;
 }
 
-void commands
 
 void loop(void) 
 { 
-  int speed = 0;
   float temp = getTemperature();
-  Serial.print("\n");
-  if (temp > 24) 
-  {
-    fanControl(255);  
-  }
-
-  else
-  {
-    fanControl(32);
-  }
+  float duty_cycle = calculateDutyCycle(temp);
+  setFanSpeed(duty_cycle);
   
-  delay(2000);   
+  
+
+    
 }
