@@ -23,7 +23,7 @@
 #include <DallasTemperature.h>
 /********************************************************************/
 
-// Definisjon av pins,
+// Pin mapping
 #define POTENTIOMETER_PIN A0
 #define SWITCH_PIN 2
 #define FAN1_CONTROL_PIN 3
@@ -63,12 +63,12 @@ void setup(void)
  // -- Define and initialize I/O pins -- 
 
  // Fan 1 relay
- pinMode(FAN1_SWITCH_PIN, OUTPUT); // Sett som output
- digitalWrite(FAN1_SWITCH_PIN, HIGH); // Default tilstand
+ pinMode(FAN1_SWITCH_PIN, OUTPUT); 
+ digitalWrite(FAN1_SWITCH_PIN, HIGH); // Default state
 
  // Fan 2 relay
- pinMode(FAN2_SWITCH_PIN, OUTPUT); // Sett som output
- digitalWrite(FAN2_SWITCH_PIN, HIGH); // Default tilstand
+ pinMode(FAN2_SWITCH_PIN, OUTPUT); // 
+ digitalWrite(FAN2_SWITCH_PIN, HIGH); // Default state
 
 
  // Initialize sensors
