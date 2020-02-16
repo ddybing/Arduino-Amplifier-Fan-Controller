@@ -2,19 +2,17 @@
  /* -- PIN map --
  * 
  * PIN A0 = Potentiometer
- * PIN 2  = Bryter
- * PIN 3  = Vifte 1 PWM
- * PIN 5  = Vifte 2 PWM
- * PIN 7  = LED-lys relè
- * PIN 8  = Vifte 1 relè
- * PIN 12 = Temperatursensor signal
- * PIN 13 = Vifte 2 relè
+ * PIN 2  = Switch
+ * PIN 3  = Fan 1 PWM
+ * PIN 5  = Fan 2 PWM
+ * PIN 7  = LED relay
+ * PIN 8  = Fan 1 relay
+ * PIN 12 = Signal from temp sensor (DS18B20)
+ * PIN 13 = Fan 2 relè
  * 
  */
 
-
-
-// Duty cycle formel 
+// Duty cycle formula for fans
 // f(x) = ax^2
 // 0.625 * pow (temp, 2) + 0 + 30 = duty_cycle
 // E.g. temp = 30, duty_cycle = 86.25
@@ -36,7 +34,7 @@
 #define FAN2_SWITCH_PIN 13
 
 
-// Addresser til tilkoblede temperatursensorer
+// Temp sensor addresses
 DeviceAddress tempSensor1 = {0x28, 0xAA, 0xB3, 0xB0, 0x16, 0x13, 0x02, 0x83}; // For vifte 1
 DeviceAddress tempSensor2 = {0x28, 0xAA, 0xA5, 0x84, 0x13, 0x13, 0x02, 0x10}; // For vifte 2
 
@@ -57,29 +55,29 @@ DallasTemperature sensors(&oneWire);
 
 void setup(void) 
 { 
- // Åpne serial port med 9600 baud
+ // Open serial port at 9600 baud. 
  Serial.begin(9600); 
 
  //DeviceAddress tempSensor1 = {0x28, 0xAA, 0xB3, 0xB0, 0x16, 0x13, 0x02, 0x83};
  //DeviceAddress tempSensor2 = {0x28, 0xAA, 0xA5, 0x84, 0x13, 0x13, 0x02, 0x10};
- // -- Definer og initialiser output og input pins -- 
+ // -- Define and initialize I/O pins -- 
 
- // Vifte 1 relè
+ // Fan 1 relay
  pinMode(FAN1_SWITCH_PIN, OUTPUT); // Sett som output
  digitalWrite(FAN1_SWITCH_PIN, HIGH); // Default tilstand
 
- // Vifte 2 relè
+ // Fan 2 relay
  pinMode(FAN2_SWITCH_PIN, OUTPUT); // Sett som output
  digitalWrite(FAN2_SWITCH_PIN, HIGH); // Default tilstand
 
 
- // Start sensor bibliotek
+ // Initialize sensors
  sensors.begin();
 
  // Safety delay
  delay(2000);
  
- // Sett sensor bit-resolution til 12 for alle temperatursensorer
+ // Set sensor bit resolution to 12 for all sensors.
  int sensorCount = sensors.getDeviceCount();
  for (int i = 0; i < sensorCount; i++)
  {
@@ -88,7 +86,7 @@ void setup(void)
  //sensors.setResolution(tempSensor1, 11);
  //sensors.setResolution(tempSensor2, 11);
  
- Serial.print("### Danil og Kristoffer's temperaturmåler ###");
+ Serial.print("### Arduino Receiver Cooling and Visualization System (A.R.C.V.S) ###");
  Serial.print("\n");
 } 
 
@@ -117,7 +115,7 @@ float getTemperature()
 
 float calculateDutyCycle(float temp)
 {
-  // Returner duty cycle for PWM-styringen til vifta (0-255).
+  // Return duty cycle for fan PWM (0-255).
   return 0.625 * pow (temp, 2) + 0 + 30;
 }
 
