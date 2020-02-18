@@ -1,17 +1,17 @@
 
- /* -- PIN map --
- * 
- * PIN A0 = Potentiometer
- * PIN 2  = Switch
- * PIN 3  = Fan 1 PWM
- * PIN 5  = Fan 2 PWM
- * PIN 6  = LED PWM
- * PIN 7  = LED relay
- * PIN 8  = Fan 1 relay
- * PIN 12 = Signal from temp sensor (DS18B20)
- * PIN 13 = Fan 2 relè
- * 
- */
+/* -- PIN map --
+
+  PIN A0 = Potentiometer
+  PIN 2  = Switch
+  PIN 3  = Fan 1 PWM
+  PIN 5  = Fan 2 PWM
+  PIN 6  = LED PWM
+  PIN 7  = LED relay
+  PIN 8  = Fan 1 relay
+  PIN 12 = Signal from temp sensor (DS18B20)
+  PIN 13 = Fan 2 relè
+
+*/
 
 // Duty cycle formula for fans
 // f(x) = ax^2
@@ -46,7 +46,7 @@
 // Settings ||||||||||||||||||||||||||||||||||||||||||||||||||||
 
 
-#define MIN_TEMP 28
+#define MIN_TEMP 30
 #define MAX_TEMP 60
 
 #define FAN1_SPEED_COMP 1 // Speed compensation for fan 1. 1 = no compensation (duty_cycle x 1)
@@ -60,19 +60,18 @@
 class Fan
 {
   public:
+    int switch_pin;
+    int signal_pin;
+    int state;
 
-        int switch_pin;
-        int signal_pin;
-        int state;
-        
-        void turnOff();
+    void turnOff();
 
-        void turnOn();
+    void turnOn();
 };
 
 void Fan::turnOff()
 {
-  // Set fan speed to 10% duty cycle. 
+  // Set fan speed to 10% duty cycle.
   analogWrite (signal_pin, 25.5);
   delay (100); // Wait for 100 milliseconds.
   digitalWrite (switch_pin, HIGH);
@@ -95,16 +94,16 @@ class LED
 {
   public:
 
-        int switch_pin;
-        int signal_pin;
-        int state;
+    int switch_pin;
+    int signal_pin;
+    int state;
 
-        void turnOff();
+    void turnOff();
 
-        void turnOn();
+    void turnOn();
 
-        void changeColour();
-        
+    void changeColour();
+
 };
 
 
@@ -123,79 +122,82 @@ void LED::turnOn()
   // ....
   delay(100); // Wait 100 milliseconds
   digitalWrite(switch_pin, HIGH);
-  delay(100); // Wait for the relay to turn on. 
-  
+  delay(100); // Wait for the relay to turn on.
+
 }
 
 void LED::changeColour()
 {
-  
+
 }
 // End of Classes ||||||||||||||||||||||||||||||||||||||
 
 /********************************************************************/
-// Setup a oneWire instance to communicate with any OneWire devices  
-// (not just Maxim/Dallas temperature ICs) 
-OneWire oneWire(TEMPSENSOR_PIN); 
+// Setup a oneWire instance to communicate with any OneWire devices
+// (not just Maxim/Dallas temperature ICs)
+OneWire oneWire(TEMPSENSOR_PIN);
 /********************************************************************/
-// Pass our oneWire reference to Dallas Temperature. 
+// Pass our oneWire reference to Dallas Temperature.
 DallasTemperature sensors(&oneWire);
-/********************************************************************/ 
-
+/********************************************************************/
 
 
 // SETUP |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
-void setup(void) 
-{ 
- // Open serial port at 9600 baud. 
- Serial.begin(9600); 
+//fan1.switch_pin(FAN1_SWITCH_PIN);
+//fan1.signal_pin(FAN1_CONTROL_PIN);
+//fan1.state(0);
+void setup(void)
+{
+  // Open serial port at 9600 baud.
+  Serial.begin(9600);
+  // -- Define and initialize I/O pins --
 
 
- // -- Define and initialize I/O pins -- 
+  // Physical switch input pin
+  pinMode(SWITCH_PIN, INPUT);
 
- // Fan 1 relay state
- pinMode(FAN1_SWITCH_PIN, OUTPUT); 
- digitalWrite(FAN1_SWITCH_PIN, HIGH); // Default state
+  // Fan 1 relay state
+  pinMode(FAN1_SWITCH_PIN, OUTPUT);
+  digitalWrite(FAN1_SWITCH_PIN, HIGH); // Default state
 
- // Fan 2 relay state
- pinMode(FAN2_SWITCH_PIN, OUTPUT); // 
- digitalWrite(FAN2_SWITCH_PIN, HIGH); // Default state
-
-
- // Initialize sensors
- sensors.begin();
-
- // Safety delay after sensors have initialized
- delay(2000);
- 
- // Set sensor bit resolution to 12 for all sensors.
- int sensorCount = sensors.getDeviceCount();
- for (int i = 0; i < sensorCount; i++)
- {
-  sensors.setResolution(i,12);
- }
- 
- Serial.print("### Arduino Receiver Cooling and Visualization System (A.R.C.V.S) ###");
- Serial.print("\n");
-
- digitalWrite(FAN1_SWITCH_PIN, LOW);
- digitalWrite(FAN2_SWITCH_PIN, LOW);
+  // Fan 2 relay state
+  pinMode(FAN2_SWITCH_PIN, OUTPUT); //
+  digitalWrite(FAN2_SWITCH_PIN, HIGH); // Default state
 
 
-} 
+  // Initialize sensors
+  sensors.begin();
+
+  // Safety delay after sensors have initialized
+  delay(2000);
+
+  // Set sensor bit resolution to 12 for all sensors.
+  int sensorCount = sensors.getDeviceCount();
+  for (int i = 0; i < sensorCount; i++)
+  {
+    sensors.setResolution(i, 12);
+  }
+
+  Serial.print("### Arduino Receiver Cooling and Visualization System (A.R.C.V.S) ###");
+  Serial.print("\n");
+
+  digitalWrite(FAN1_SWITCH_PIN, LOW);
+  digitalWrite(FAN2_SWITCH_PIN, LOW);
+
+
+}
 
 
 // END OF SETUP |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
 
-Fan fan1;
 
 
 void setFanSpeed(float fanSpeed)
 {
-      analogWrite(FAN1_CONTROL_PIN, (fanSpeed * FAN1_SPEED_COMP));
-      analogWrite(FAN2_CONTROL_PIN, (fanSpeed * FAN2_SPEED_COMP));
+  analogWrite(FAN1_CONTROL_PIN, (fanSpeed * FAN1_SPEED_COMP));
+  analogWrite(FAN2_CONTROL_PIN, (fanSpeed * FAN2_SPEED_COMP));
 }
 
 
@@ -204,8 +206,6 @@ float getTemperature()
   sensors.requestTemperatures();
   delay(100);
   float temp = sensors.getTempCByIndex(0);
-  Serial.print("Temp: ");
-  Serial.println(temp);
   return temp;
 }
 
@@ -213,40 +213,45 @@ float getTemperature()
 float calculateDutyCycle(float temp)
 {
   // Return duty cycle for fan PWM (0-255).
-  if (temp >MAX_TEMP){
+  if (temp > MAX_TEMP) {
     return 255;
   }
   else {
-  return 0.0625 * (temp * temp) + 0 + 30;
+    return 0.0625 * (temp * temp) + 0 + 30;
   }
 }
 
 
 void loop(void)
-{ 
-  
+{
+
   float temp = getTemperature();
   float duty_cycle = calculateDutyCycle(temp);
-  if (temp > MAX_TEMP) 
+  if (temp > MAX_TEMP)
   {
     setFanSpeed(255);
   }
 
   else if (temp < MIN_TEMP)
   {
-    digitalWrite(FAN1_SWITCH_PIN, HIGH); //fan1.turnOff();
-    digitalWrite(FAN2_SWITCH_PIN, HIGH); //fan2.turnOff();
-    
+    digitalWrite(LED_SWITCH_PIN, HIGH);  // led1.turnOff();
+    digitalWrite(FAN1_SWITCH_PIN, HIGH); // fan1.turnOff();
+    digitalWrite(FAN2_SWITCH_PIN, HIGH); // fan2.turnOff();
   }
-  else 
+  else
   {
+    digitalWrite(LED_SWITCH_PIN, LOW);  // led1.turnOn();
     digitalWrite(FAN1_SWITCH_PIN, LOW); // fan1.turnOn();
     digitalWrite(FAN2_SWITCH_PIN, LOW); // fan2.turnOn();
+    Serial.println(temp);
+    Serial.println(duty_cycle);
     setFanSpeed(duty_cycle);
   }
 
-  Serial.print("Duty cycle: ");
-  Serial.println(duty_cycle);
+  //Serial.print("Duty cycle: ");
+  //Serial.println(duty_cycle);
+  Serial.print("Bryter: ");
+  Serial.println(digitalRead(SWITCH_PIN));
   delay(1000);
-      
+
 }
