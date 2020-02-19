@@ -309,7 +309,6 @@ float failSafe(int temp)
     }
 }
 
-
 float automaticControl(float temp)
 {
   float duty_cycle = calculateDutyCycle(temp);
@@ -342,7 +341,8 @@ float automaticControl(float temp)
 float calculateDutyCycle(float temp)
 {
   // Return duty cycle for fan PWM (0-255).
-  if (temp > MAX_TEMP) {
+  if (temp > MAX_TEMP) 
+  {
     return 255;
   }
   else {
@@ -368,26 +368,25 @@ void loop(void)
     
   while (isAuto == 0)
   {
-      float temp = getTemperature();
-      failSafe(temp);
-      float duty_cycle = (analogRead(POTENTIOMETER_PIN)/4);
-      float fanDutyCycle = calculateManualDutyCycle(temp);
-      digitalWrite(LED_SWITCH_PIN, LOW);  // led1.turnOn();
-      digitalWrite(FAN1_SWITCH_PIN, LOW); // fan1.turnOn();
-      digitalWrite(FAN2_SWITCH_PIN, LOW); // fan2.turnOn();
-      setFanSpeed(fanDutyCycle);
-      setLEDTemperature(temp);
-      isAuto = digitalRead(SWITCH_PIN);
-      Serial.print("isAuto: ");
-      Serial.println(isAuto);
-      Serial.print("Potentiometer: ");
-      Serial.println(analogRead(POTENTIOMETER_PIN));
-      Serial.print("Duty cycle: ");
-      Serial.println(fanDutyCycle);
-      Serial.print("Temperature: ");
-      Serial.println(temp);
-      Serial.println();
-
+    float temp = getTemperature();
+    failSafe(temp);
+    float duty_cycle = (analogRead(POTENTIOMETER_PIN)/4);
+    float fanDutyCycle = calculateManualDutyCycle(temp);
+    digitalWrite(LED_SWITCH_PIN, LOW);  // led1.turnOn();
+    digitalWrite(FAN1_SWITCH_PIN, LOW); // fan1.turnOn();
+    digitalWrite(FAN2_SWITCH_PIN, LOW); // fan2.turnOn();
+    setFanSpeed(fanDutyCycle);
+    setLEDTemperature(temp);
+    isAuto = digitalRead(SWITCH_PIN);
+    Serial.print("isAuto: ");
+    Serial.println(isAuto);
+    Serial.print("Potentiometer: ");
+    Serial.println(analogRead(POTENTIOMETER_PIN));
+    Serial.print("Duty cycle: ");
+    Serial.println(fanDutyCycle);
+    Serial.print("Temperature: ");
+    Serial.println(temp);
+    Serial.println();
  
       delay(500); // Delay between each cycle
   }  
