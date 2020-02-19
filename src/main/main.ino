@@ -27,6 +27,7 @@
 
 // Pin mapping
 #define POTENTIOMETER_PIN A0
+#define INDICATOR_SWITCH_PIN 10
 #define SWITCH_PIN 2
 #define FAN1_CONTROL_PIN 3
 #define FAN2_CONTROL_PIN 5
@@ -45,6 +46,8 @@
 
 // Settings ||||||||||||||||||||||||||||||||||||||||||||||||||||
 
+#define LED_BRIGHTNESS 10 // LED brightness 0-255
+#define NUM_LEDS 30
 
 #define MIN_TEMP 30
 #define MAX_TEMP 60
@@ -144,11 +147,22 @@ DallasTemperature sensors(&oneWire);
 
 // SETUP |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
+  // Initialize LED
+  CRGB leds[NUM_LEDS];
+  
+
+
 //fan1.switch_pin(FAN1_SWITCH_PIN);
 //fan1.signal_pin(FAN1_CONTROL_PIN);
 //fan1.state(0);
 void setup(void)
 {
+
+  // Initialize LEDS and set brightness
+  FastLED.addLeds<WS2812B, LED_CONTROL_PIN, GRB>(leds, NUM_LEDS);
+  FastLED.setBrightness(LED_BRIGHTNESS);
+
+  
   // Open serial port at 9600 baud.
   Serial.begin(9600);
   // -- Define and initialize I/O pins --
@@ -156,6 +170,12 @@ void setup(void)
 
   // Physical switch input pin
   pinMode(SWITCH_PIN, INPUT);
+
+  // Indicator switch pin
+  pinMode(10, OUTPUT);
+
+  // LED switch pin
+  pinMode(LED_SWITCH_PIN, OUTPUT);
 
   // Fan 1 relay state
   pinMode(FAN1_SWITCH_PIN, OUTPUT);
@@ -182,8 +202,10 @@ void setup(void)
   Serial.print("### Arduino Receiver Cooling and Visualization System (A.R.C.V.S) ###");
   Serial.print("\n");
 
-  digitalWrite(FAN1_SWITCH_PIN, LOW);
-  digitalWrite(FAN2_SWITCH_PIN, LOW);
+
+
+  
+  
 
 
 }
@@ -200,6 +222,22 @@ void setFanSpeed(float fanSpeed)
   analogWrite(FAN2_CONTROL_PIN, (fanSpeed * FAN2_SPEED_COMP));
 }
 
+
+void setLEDTemperature(int temp)
+{
+
+  int green = 255-(temp-30)*8.50;
+  int blue = 0;
+  int red = (temp-30)*8.50;
+  
+  for (int i=0; i<NUM_LEDS; i++)
+  {
+    leds[i].red = red;
+    leds[i].green = green;
+    leds[i].blue = blue;
+    FastLED.show();
+  }
+}
 
 float getTemperature()
 {
@@ -222,9 +260,11 @@ float calculateDutyCycle(float temp)
 }
 
 
+
+
 void loop(void)
 {
-
+  
   float temp = getTemperature();
   float duty_cycle = calculateDutyCycle(temp);
   if (temp > MAX_TEMP)
@@ -232,26 +272,49 @@ void loop(void)
     setFanSpeed(255);
   }
 
-  else if (temp < MIN_TEMP)
+  else if (temp < (MIN_TEMP-2)) // If temperature lower than 3 degrees below minimum temp
   {
     digitalWrite(LED_SWITCH_PIN, HIGH);  // led1.turnOff();
     digitalWrite(FAN1_SWITCH_PIN, HIGH); // fan1.turnOff();
     digitalWrite(FAN2_SWITCH_PIN, HIGH); // fan2.turnOff();
   }
-  else
+  else if (temp >= MIN_TEMP)
   {
     digitalWrite(LED_SWITCH_PIN, LOW);  // led1.turnOn();
     digitalWrite(FAN1_SWITCH_PIN, LOW); // fan1.turnOn();
     digitalWrite(FAN2_SWITCH_PIN, LOW); // fan2.turnOn();
-    Serial.println(temp);
-    Serial.println(duty_cycle);
     setFanSpeed(duty_cycle);
+    setLEDTemperature(temp);
+
+
+ 
+    
   }
-
-  //Serial.print("Duty cycle: ");
-  //Serial.println(duty_cycle);
-  Serial.print("Bryter: ");
-  Serial.println(digitalRead(SWITCH_PIN));
-  delay(1000);
-
+  delay(500); // Delay between each temperature poll
+  Serial.println(temp);
 }
+
+
+
+
+
+
+// Unused stuff
+// Color transition
+
+//unsigned int rgbC[3] = {255, 0, 0};
+    /* 
+    // Color transition
+    for (int decColor = 0; decColor < 3; decColor += 1) 
+    {
+      int incColor = decColor == 2 ? 0 : decColor + 1;
+
+      for (int i = 0; i < 255; i += 1)
+      {
+        rgbC[decColor] -= 2;
+        rgbC[incColor] += 2;
+        setLEDTemperature(rgbC[0], rgbC[1], rgbC[2]);
+        delay(5);
+      }
+    }
+    */
