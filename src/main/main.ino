@@ -246,8 +246,28 @@ void setLEDTemperature(int temp)
 float getTemperature()
 {
   sensors.requestTemperatures();
-  float temp = sensors.getTempCByIndex(0);
-  return temp;
+  float temp1 = sensors.getTempCByIndex(0);
+  float temp2 = sensors.getTempCByIndex(1);
+  float temp;
+
+  if (1 < temp1 | 1 < temp2) // Checking that the temp is an actual value and not a negative number (temp sensor error). 
+  {
+    temp = (temp1+temp2)/2;
+  }
+
+  else if (1 > temp1 & 1 < temp2)
+  {
+    return temp2;
+  }
+
+  else if (1 < temp1 & 1 > temp2)
+  {
+    return temp1;
+  }
+  else 
+  {
+    return (temp1+temp2)/2;
+  }
 }
 
 
@@ -336,19 +356,18 @@ void loop(void)
 {
   int isAuto = digitalRead(SWITCH_PIN);
 
-      while (isAuto == 1)
-      {
-        float temp = getTemperature();
-        automaticControl(temp);
-        failSafe(temp); // Failsafe to run for each cycle
-        isAuto = digitalRead(SWITCH_PIN);
-        delay(500);
-      }  
+  while (isAuto == 1)
+  {
+    float temp = getTemperature();
+    automaticControl(temp);
+    failSafe(temp); // Failsafe to run for each cycle
+    isAuto = digitalRead(SWITCH_PIN);
+    delay(500);
+   }  
     
     
   while (isAuto == 0)
   {
-    
       float temp = getTemperature();
       failSafe(temp);
       float duty_cycle = (analogRead(POTENTIOMETER_PIN)/4);
