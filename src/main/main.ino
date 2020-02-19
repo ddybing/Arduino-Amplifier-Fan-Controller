@@ -27,7 +27,7 @@
 
 // Pin mapping
 #define POTENTIOMETER_PIN A0
-#define INDICATOR_SWITCH_PIN 10
+#define INDICATOR_SWITCH_PIN 4
 #define SWITCH_PIN 2
 #define FAN1_CONTROL_PIN 3
 #define FAN2_CONTROL_PIN 5
@@ -43,11 +43,12 @@
 //DeviceAddress tempSensor2[8] = {0x28, 0xAA, 0xA5, 0x84, 0x13, 0x13, 0x02, 0x10};
 
 
-
 // Settings ||||||||||||||||||||||||||||||||||||||||||||||||||||
 
 #define LED_BRIGHTNESS 10 // LED brightness 0-255
 #define NUM_LEDS 30
+
+#define OUT_OF_RANGE_FLASHES 20
 
 #define MIN_TEMP 30
 #define MAX_TEMP 60
@@ -152,9 +153,6 @@ DallasTemperature sensors(&oneWire);
   
 
 
-//fan1.switch_pin(FAN1_SWITCH_PIN);
-//fan1.signal_pin(FAN1_CONTROL_PIN);
-//fan1.state(0);
 void setup(void)
 {
 
@@ -168,11 +166,13 @@ void setup(void)
   // -- Define and initialize I/O pins --
 
 
-  // Physical switch input pin
+  // Physical switch input pin. Activate pull-up resistor. NOTE: THIS INVERTS THE SIGNAL, Switch ON = 0, Switch OFF = 1.
   pinMode(SWITCH_PIN, INPUT);
+  digitalWrite(SWITCH_PIN, HIGH);
+  pinMode(SWITCH_PIN, INPUT_PULLUP);
 
   // Indicator switch pin
-  pinMode(10, OUTPUT);
+  pinMode(INDICATOR_SWITCH_PIN, OUTPUT);
 
   // LED switch pin
   pinMode(LED_SWITCH_PIN, OUTPUT);
@@ -201,19 +201,10 @@ void setup(void)
 
   Serial.print("### Arduino Receiver Cooling and Visualization System (A.R.C.V.S) ###");
   Serial.print("\n");
-
-
-
-  
-  
-
-
 }
 
 
 // END OF SETUP |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-
-
 
 
 void setFanSpeed(float fanSpeed)
@@ -225,10 +216,22 @@ void setFanSpeed(float fanSpeed)
 
 void setLEDTemperature(int temp)
 {
-
-  int green = 255-(temp-30)*8.50;
+  int modifier;
+  if (temp < MIN_TEMP)
+  {
+    modifier = 30;
+  }
+  else if ( temp >= MAX_TEMP)
+  {
+    modifier = 60;
+  }
+  else
+  {
+    modifier = temp;
+  }
+  int green = 255-(modifier-30)*8.50;
   int blue = 0;
-  int red = (temp-30)*8.50;
+  int red = (modifier-30)*8.50;
   
   for (int i=0; i<NUM_LEDS; i++)
   {
@@ -236,17 +239,85 @@ void setLEDTemperature(int temp)
     leds[i].green = green;
     leds[i].blue = blue;
     FastLED.show();
+    delay(50);
   }
 }
 
 float getTemperature()
 {
   sensors.requestTemperatures();
-  delay(100);
   float temp = sensors.getTempCByIndex(0);
   return temp;
 }
 
+
+float calculateManualDutyCycle(float temp)
+{
+  // Return duty cycle for fan PWM (0-255).
+  if (temp > MAX_TEMP) {
+    return 255;
+  }
+  else {
+    float duty_cycle =  0.0625 * (temp * temp) + 0 + 30 + (analogRead(POTENTIOMETER_PIN)/5);
+    if (duty_cycle >= 255)
+    {
+      return 255;
+    }
+
+    else{
+      return 0.0625 * (temp * temp) + 0 + 30 + (analogRead(POTENTIOMETER_PIN)/5);
+    }
+  }
+}
+
+float failSafe(int temp) 
+{
+  // Check for issues
+
+  if (temp < 15 | temp > 62)
+  {
+    for (int i=0; i<OUT_OF_RANGE_FLASHES; i++)
+    {
+      digitalWrite(INDICATOR_SWITCH_PIN, LOW);
+      delay(160),
+      digitalWrite(INDICATOR_SWITCH_PIN, HIGH);
+    }
+  }
+    else
+    {
+      digitalWrite(INDICATOR_SWITCH_PIN, HIGH);
+    }
+}
+
+
+float automaticControl(float temp)
+{
+  float duty_cycle = calculateDutyCycle(temp);
+  if (temp >= MAX_TEMP)
+  {
+    setLEDTemperature(MAX_TEMP);
+    setFanSpeed(255);
+  }
+  else if  (temp < 0)
+  {
+    setLEDTemperature(MAX_TEMP);
+    setFanSpeed(255);
+   }
+  else if (temp < (MIN_TEMP-2)) // If temperature lower than 3 degrees below minimum temp
+  {
+    digitalWrite(LED_SWITCH_PIN, HIGH);  // led1.turnOff();
+    digitalWrite(FAN1_SWITCH_PIN, HIGH); // fan1.turnOff();
+    digitalWrite(FAN2_SWITCH_PIN, HIGH); // fan2.turnOff();
+   }
+    else if (temp >= MIN_TEMP)
+   {
+    digitalWrite(LED_SWITCH_PIN, LOW);  // led1.turnOn();
+    digitalWrite(FAN1_SWITCH_PIN, LOW); // fan1.turnOn();
+    digitalWrite(FAN2_SWITCH_PIN, LOW); // fan2.turnOn();
+    setFanSpeed(duty_cycle);
+    setLEDTemperature(temp);
+    }   
+}
 
 float calculateDutyCycle(float temp)
 {
@@ -259,62 +330,46 @@ float calculateDutyCycle(float temp)
   }
 }
 
-
-
+int isAuto = 0;
 
 void loop(void)
 {
-  
-  float temp = getTemperature();
-  float duty_cycle = calculateDutyCycle(temp);
-  if (temp > MAX_TEMP)
-  {
-    setFanSpeed(255);
-  }
+  int isAuto = digitalRead(SWITCH_PIN);
 
-  else if (temp < (MIN_TEMP-2)) // If temperature lower than 3 degrees below minimum temp
+      while (isAuto == 1)
+      {
+        float temp = getTemperature();
+        automaticControl(temp);
+        failSafe(temp); // Failsafe to run for each cycle
+        isAuto = digitalRead(SWITCH_PIN);
+        delay(500);
+      }  
+    
+    
+  while (isAuto == 0)
   {
-    digitalWrite(LED_SWITCH_PIN, HIGH);  // led1.turnOff();
-    digitalWrite(FAN1_SWITCH_PIN, HIGH); // fan1.turnOff();
-    digitalWrite(FAN2_SWITCH_PIN, HIGH); // fan2.turnOff();
-  }
-  else if (temp >= MIN_TEMP)
-  {
-    digitalWrite(LED_SWITCH_PIN, LOW);  // led1.turnOn();
-    digitalWrite(FAN1_SWITCH_PIN, LOW); // fan1.turnOn();
-    digitalWrite(FAN2_SWITCH_PIN, LOW); // fan2.turnOn();
-    setFanSpeed(duty_cycle);
-    setLEDTemperature(temp);
-
+    
+      float temp = getTemperature();
+      failSafe(temp);
+      float duty_cycle = (analogRead(POTENTIOMETER_PIN)/4);
+      float fanDutyCycle = calculateManualDutyCycle(temp);
+      digitalWrite(LED_SWITCH_PIN, LOW);  // led1.turnOn();
+      digitalWrite(FAN1_SWITCH_PIN, LOW); // fan1.turnOn();
+      digitalWrite(FAN2_SWITCH_PIN, LOW); // fan2.turnOn();
+      setFanSpeed(fanDutyCycle);
+      setLEDTemperature(temp);
+      isAuto = digitalRead(SWITCH_PIN);
+      Serial.print("isAuto: ");
+      Serial.println(isAuto);
+      Serial.print("Potentiometer: ");
+      Serial.println(analogRead(POTENTIOMETER_PIN));
+      Serial.print("Duty cycle: ");
+      Serial.println(fanDutyCycle);
+      Serial.print("Temperature: ");
+      Serial.println(temp);
+      Serial.println();
 
  
-    
-  }
-  delay(500); // Delay between each temperature poll
-  Serial.println(temp);
+      delay(500); // Delay between each cycle
+  }  
 }
-
-
-
-
-
-
-// Unused stuff
-// Color transition
-
-//unsigned int rgbC[3] = {255, 0, 0};
-    /* 
-    // Color transition
-    for (int decColor = 0; decColor < 3; decColor += 1) 
-    {
-      int incColor = decColor == 2 ? 0 : decColor + 1;
-
-      for (int i = 0; i < 255; i += 1)
-      {
-        rgbC[decColor] -= 2;
-        rgbC[incColor] += 2;
-        setLEDTemperature(rgbC[0], rgbC[1], rgbC[2]);
-        delay(5);
-      }
-    }
-    */
