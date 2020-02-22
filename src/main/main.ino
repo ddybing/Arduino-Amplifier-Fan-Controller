@@ -362,14 +362,15 @@ void loop(void)
     automaticControl(temp);
     failSafe(temp); // Failsafe to run for each cycle
     isAuto = digitalRead(SWITCH_PIN);
-    delay(500);
+    
+    delay(500); // Delay between each cycle
    }  
     
     
   while (isAuto == 0)
   {
     float temp = getTemperature();
-    failSafe(temp);
+    failSafe(temp); // Failsafe to run for each cycle
     float duty_cycle = (analogRead(POTENTIOMETER_PIN)/4);
     float fanDutyCycle = calculateManualDutyCycle(temp);
     digitalWrite(LED_SWITCH_PIN, LOW);  // led1.turnOn();
@@ -378,16 +379,7 @@ void loop(void)
     setFanSpeed(fanDutyCycle);
     setLEDTemperature(temp);
     isAuto = digitalRead(SWITCH_PIN);
-    Serial.print("isAuto: ");
-    Serial.println(isAuto);
-    Serial.print("Potentiometer: ");
-    Serial.println(analogRead(POTENTIOMETER_PIN));
-    Serial.print("Duty cycle: ");
-    Serial.println(fanDutyCycle);
-    Serial.print("Temperature: ");
-    Serial.println(temp);
-    Serial.println();
  
-      delay(500); // Delay between each cycle
+    delay(500); // Delay between each cycle
   }  
 }
