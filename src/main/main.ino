@@ -192,13 +192,6 @@ void setup(void)
   // Safety delay after sensors have initialized
   delay(2000);
 
-  // Set sensor bit resolution to 12 for all sensors.
-  int sensorCount = sensors.getDeviceCount();
-  for (int i = 0; i < sensorCount; i++)
-  {
-    sensors.setResolution(i, 12);
-  }
-
   Serial.print("### Arduino Receiver Cooling and Visualization System (A.R.C.V.S) ###");
   Serial.print("\n");
 }
