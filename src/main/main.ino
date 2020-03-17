@@ -9,7 +9,7 @@
   PIN 7  = LED relay
   PIN 8  = Fan 1 relay
   PIN 12 = Signal from temp sensor (DS18B20)
-  PIN 13 = Fan 2 relè
+  PIN 13 = Fan 2 relay
 
 */
 
@@ -253,6 +253,7 @@ float getTemperature()
   if (1 < temp1 | 1 < temp2) // Checking that the temp is an actual value and not a negative number (temp sensor error). 
   {
     temp = (temp1+temp2)/2;
+    return temp;
   }
 
   else if (1 > temp1 & 1 < temp2)
@@ -359,6 +360,7 @@ void loop(void)
   while (isAuto == 1)
   {
     float temp = getTemperature();
+    Serial.print(temp);
     automaticControl(temp);
     failSafe(temp); // Failsafe to run for each cycle
     isAuto = digitalRead(SWITCH_PIN);
@@ -370,6 +372,7 @@ void loop(void)
   while (isAuto == 0)
   {
     float temp = getTemperature();
+    Serial.print(temp);
     failSafe(temp); // Failsafe to run for each cycle
     float duty_cycle = (analogRead(POTENTIOMETER_PIN)/4);
     float fanDutyCycle = calculateManualDutyCycle(temp);
